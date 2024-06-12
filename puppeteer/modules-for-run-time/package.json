@@ -1,0 +1,19 @@
+{
+  "name": "modules-for-run-time",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@infisical/sdk": "^2.1.9",
+    "commander": "^12.1.0",
+    "dotenv": "^16.4.5",
+    "otplib": "^12.0.1",
+    "redis": "^4.6.14"
+  }
+}

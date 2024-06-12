@@ -1,0 +1,8 @@
+{
+  "watch": ["bin", "routes", "views", "public", "app.js"],
+  "ext": "js,json,ejs,css",
+  "exec": "node ./bin/www",
+  "env": {
+    "DEBUG": "s24:*"
+  }
+}

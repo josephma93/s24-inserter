@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1"
+          name="viewport">
+    <title>Registro de Transacción</title>
+    <link crossorigin="anonymous"
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+          integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN"
+          rel="stylesheet">
+</head>
+<body>
+
+<form class="container my-5"
+      id="transactionForm"
+      action="/submit-form"
+      method="post"
+      enctype="multipart/form-data">
+    <h1 class="mb-4">Registro de Transacción</h1>
+
+    <div class="mb-3">
+        <label class="form-label"
+               for="date">Fecha:</label>
+        <input class="form-control"
+               id="date"
+               name="date"
+               type="date"
+               v-model="date">
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label"
+               for="transactionType">Tipo de transacción:</label>
+        <select class="form-select"
+                id="transactionType"
+                name="transactionType"
+                v-model="transactionType">
+            <option value="">--Seleccione uno--</option>
+            <option value="donation">Donación</option>
+            <option value="deposit">Depósito en la caja de efectivo</option>
+            <option value="payment">Pago</option>
+            <option value="cashAdvance">Adelanto de efectivo</option>
+        </select>
+    </div>
+
+    <fieldset :disabled="isDonationDisabled"
+              class="mb-3">
+        <legend>Donaciones</legend>
+
+        <div class="mb-3">
+            <label class="form-label"
+                   for="worldDonations">Donaciones (Obra mundial):</label>
+            <input class="form-control"
+                   id="worldDonations"
+                   name="worldDonations"
+                   placeholder="Cantidad en colones"
+                   step="0.01"
+                   type="number"
+                   autofocus
+                   v-model="worldDonations">
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label"
+                   for="localDonations">Donaciones (Gastos de la congregación):</label>
+            <input class="form-control"
+                   id="localDonations"
+                   name="localDonations"
+                   placeholder="Cantidad en colones"
+                   step="0.01"
+                   type="number"
+                   v-model="localDonations">
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label"
+                   for="donationsSubTotal">Total Donaciones:</label>
+            <output class="font-monospace fw-bold"
+                    id="donationsSubTotal"
+                    name="donationsSubTotal">{{donationsSubTotal}}
+            </output>
+        </div>
+    </fieldset>
+
+    <fieldset class="mb-3">
+        <legend>
+            <button aria-controls="otherConceptsCollapse"
+                    aria-expanded="false"
+                    class="btn btn-link"
+                    data-bs-target="#otherConceptsCollapse"
+                    data-bs-toggle="collapse"
+                    type="button">
+                Otros Conceptos <span aria-hidden="true">&raquo;</span>
+            </button>
+
+        </legend>
+
+        <div class="collapse"
+             id="otherConceptsCollapse">
+            <div class="mb-3">
+
+                <div class="mb-3">
+                    <label class="form-label"
+                           for="concept1">Concepto 1:</label>
+                    <input class="form-control"
+                           id="concept1"
+                           name="concept1"
+                           placeholder="Descripción del concepto"
+                           type="text"
+                           v-model="concept1">
+                    <label class="visually-hidden"
+                           for="amount1">Cantidad en colones para el concepto 1.</label>
+                    <input class="form-control mt-2"
+                           id="amount1"
+                           name="amount1"
+                           placeholder="Cantidad en colones"
+                           step="0.01"
+                           type="number"
+                           v-model="amount1">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label"
+                           for="concept2">Concepto 2:</label>
+                    <input class="form-control"
+                           id="concept2"
+                           name="concept2"
+                           placeholder="Descripción del concepto"
+                           type="text"
+                           v-model="concept2">
+                    <label class="visually-hidden"
+                           for="amount2">Cantidad en colones para el concepto 2.</label>
+                    <input class="form-control mt-2"
+                           id="amount2"
+                           name="amount2"
+                           placeholder="Cantidad en colones"
+                           step="0.01"
+                           type="number"
+                           v-model="amount2">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label"
+                           for="concept3">Concepto 3:</label>
+                    <input class="form-control"
+                           id="concept3"
+                           name="concept3"
+                           placeholder="Descripción del concepto"
+                           type="text"
+                           v-model="concept3">
+                    <label class="visually-hidden"
+                           for="amount3">Cantidad en colones para el concepto 3.</label>
+                    <input class="form-control mt-2"
+                           id="amount3"
+                           name="amount3"
+                           placeholder="Cantidad en colones"
+                           step="0.01"
+                           type="number"
+                           v-model="amount3">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label"
+                           for="othersSubTotal">Total Donaciones:</label>
+                    <output class="font-monospace fw-bold"
+                            id="othersSubTotal"
+                            name="othersSubTotal">{{othersSubTotal}}
+                    </output>
+                </div>
+            </div>
+        </div>
+    </fieldset>
+
+    <div class="mb-3">
+        <label class="form-label"
+               for="grandTotal">TOTAL:</label>
+        <output class="font-monospace fw-bold"
+                id="grandTotal"
+                name="grandTotal">{{grandTotal}}
+        </output>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label"
+               for="s24capture">Captura del formulario de papel:</label>
+        <input accept="image/*"
+               capture="environment"
+               class="form-control"
+               id="s24capture"
+               name="s24capture"
+               type="file"
+               v-on:change="handleFileChange">
+    </div>
+
+    <div class="text-end">
+        <button class="btn btn-primary"
+                type="submit">Enviar
+        </button>
+    </div>
+</form>
+
+
+<script crossorigin="anonymous"
+        integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
+        src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
+
+<script src="/javascripts/form.js"></script>
+</body>
+</html>
