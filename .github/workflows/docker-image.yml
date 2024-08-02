@@ -22,23 +22,24 @@ jobs:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
 
-    - name: Get changed files
-      id: changes
-      run: |
-        git fetch origin main
-        echo "files=$(git diff --name-only origin/main HEAD)" >> $GITHUB_OUTPUT
-        git diff --name-only origin/main HEAD
+    - name: Get hash for fe directory
+      id: hash_fe
+      run: echo "HASH_FE=$(git rev-parse HEAD:fe)" >> $GITHUB_ENV
 
-    - name: Print changed files
-      run: |
-        echo "Changed files: ${{ steps.changes.outputs.files }}"
+    - name: Get previous hash for fe directory
+      id: prev_hash_fe
+      run: echo "PREV_HASH_FE=$(git rev-parse HEAD~1:fe)" >> $GITHUB_ENV
+
+    - name: Compare hashes for fe
+      if: env.HASH_FE != env.PREV_HASH_FE
+      run: echo "Hashes are different for fe"
 
     - name: Get short SHA
       id: vars
       run: echo "SHORT_SHA=${GITHUB_SHA::7}" >> $GITHUB_ENV
 
     - name: Build and push Docker image for fe
-      if: steps.changes.outputs.files && contains(steps.changes.outputs.files, 'fe/')
+      if: env.HASH_FE != env.PREV_HASH_FE
       uses: docker/build-push-action@v4
       with:
         context: ./fe
@@ -64,23 +65,24 @@ jobs:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
 
-    - name: Get changed files
-      id: changes
-      run: |
-        git fetch origin main
-        echo "files=$(git diff --name-only origin/main HEAD)" >> $GITHUB_OUTPUT
-        git diff --name-only origin/main HEAD
+    - name: Get hash for orchestrator directory
+      id: hash_orchestrator
+      run: echo "HASH_ORCHESTRATOR=$(git rev-parse HEAD:orchestrator)" >> $GITHUB_ENV
 
-    - name: Print changed files
-      run: |
-        echo "Changed files: ${{ steps.changes.outputs.files }}"
+    - name: Get previous hash for orchestrator directory
+      id: prev_hash_orchestrator
+      run: echo "PREV_HASH_ORCHESTRATOR=$(git rev-parse HEAD~1:orchestrator)" >> $GITHUB_ENV
+
+    - name: Compare hashes for orchestrator
+      if: env.HASH_ORCHESTRATOR != env.PREV_HASH_ORCHESTRATOR
+      run: echo "Hashes are different for orchestrator"
 
     - name: Get short SHA
       id: vars
       run: echo "SHORT_SHA=${GITHUB_SHA::7}" >> $GITHUB_ENV
 
     - name: Build and push Docker image for orchestrator
-      if: steps.changes.outputs.files && contains(steps.changes.outputs.files, 'orchestrator/')
+      if: env.HASH_ORCHESTRATOR != env.PREV_HASH_ORCHESTRATOR
       uses: docker/build-push-action@v4
       with:
         context: ./orchestrator
