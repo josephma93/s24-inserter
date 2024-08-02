@@ -3,9 +3,6 @@ FROM node:20-alpine
 # Define environment variables
 ENV DEBUG=*
 ENV NODE_ENV=production
-ENV NPM_CONFIG_LOGLEVEL=debug
-ENV NPM_CONFIG_PREFIX=/home/node/.npm-global
-ENV PATH=$PATH:/home/node/.npm-global/bin
 ENV PORT=3000
 ENV REDIS_PASSWORD=not_set
 
