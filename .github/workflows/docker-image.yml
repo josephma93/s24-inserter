@@ -1,0 +1,79 @@
+name: Build and Push Docker Images
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-fe:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+
+    - name: Login to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Get changed files
+      id: changes
+      run: |
+        echo "::set-output name=files::$(git diff --name-only HEAD^ HEAD)"
+
+    - name: Get short SHA
+      id: vars
+      run: echo "SHORT_SHA=${GITHUB_SHA::7}" >> $GITHUB_ENV
+
+    - name: Build and push Docker image for fe
+      if: steps.changes.outputs.files && contains(steps.changes.outputs.files, 'fe/')
+      uses: docker/build-push-action@v4
+      with:
+        context: ./fe
+        file: ./fe/Dockerfile
+        push: true
+        tags: |
+          ${{ secrets.DOCKER_USERNAME }}/s24-inserter-fe:latest
+          ${{ secrets.DOCKER_USERNAME }}/s24-inserter-fe:${{ env.SHORT_SHA }}
+
+  build-orchestrator:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+
+    - name: Login to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Get changed files
+      id: changes
+      run: |
+        echo "::set-output name=files::$(git diff --name-only HEAD^ HEAD)"
+
+    - name: Get short SHA
+      id: vars
+      run: echo "SHORT_SHA=${GITHUB_SHA::7}" >> $GITHUB_ENV
+
+    - name: Build and push Docker image for orchestrator
+      if: steps.changes.outputs.files && contains(steps.changes.outputs.files, 'orchestrator/')
+      uses: docker/build-push-action@v4
+      with:
+        context: ./orchestrator
+        file: ./orchestrator/Dockerfile
+        push: true
+        tags: |
+          ${{ secrets.DOCKER_USERNAME }}/s24-inserter-orchestrator:latest
+          ${{ secrets.DOCKER_USERNAME }}/s24-inserter-orchestrator:${{ env.SHORT_SHA }}
