@@ -12,6 +12,9 @@ RUN apk add --no-cache tini
 RUN mkdir -p /usr/app && chown node:node /usr/app
 WORKDIR /usr/app
 
+# Install dependencies as node user
+USER node
+
 COPY --chown=node:node package*.json ./
 
 RUN npm ci --only=production
@@ -21,9 +24,6 @@ COPY --chown=node:node . .
 
 # Set the signal for the Docker to send to the container to terminate it
 STOPSIGNAL SIGTERM
-
-# Switch to node user
-USER node
 
 # Use tini to handle init system
 ENTRYPOINT ["tini", "--"]

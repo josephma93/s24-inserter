@@ -33,15 +33,22 @@ jobs:
       run: echo "PREV_HASH_FE=$(git rev-parse HEAD~1:fe)" >> $GITHUB_ENV
 
     - name: Compare hashes for fe
-      if: env.HASH_FE != env.PREV_HASH_FE
-      run: echo "Hashes are different for fe"
+      run: |
+        echo "HASH_FE=${{ env.HASH_FE }}"
+        echo "PREV_HASH_FE=${{ env.PREV_HASH_FE }}"
+        if [ "${{ env.HASH_FE }}" != "${{ env.PREV_HASH_FE }}" ]; then
+          echo "Hashes are different for fe"
+          echo "BUILD_FE=true" >> $GITHUB_ENV
+        else
+          echo "BUILD_FE=false" >> $GITHUB_ENV
+        fi
 
     - name: Get short SHA
       id: vars
       run: echo "SHORT_SHA=${GITHUB_SHA::7}" >> $GITHUB_ENV
 
     - name: Build and push Docker image for fe
-      if: env.HASH_FE != env.PREV_HASH_FE
+      if: env.BUILD_FE == 'true'
       uses: docker/build-push-action@v5
       with:
         context: ./fe
@@ -78,15 +85,22 @@ jobs:
       run: echo "PREV_HASH_ORCHESTRATOR=$(git rev-parse HEAD~1:orchestrator)" >> $GITHUB_ENV
 
     - name: Compare hashes for orchestrator
-      if: env.HASH_ORCHESTRATOR != env.PREV_HASH_ORCHESTRATOR
-      run: echo "Hashes are different for orchestrator"
+      run: |
+        echo "HASH_ORCHESTRATOR=${{ env.HASH_ORCHESTRATOR }}"
+        echo "PREV_HASH_ORCHESTRATOR=${{ env.PREV_HASH_ORCHESTRATOR }}"
+        if [ "${{ env.HASH_ORCHESTRATOR }}" != "${{ env.PREV_HASH_ORCHESTRATOR }}" ]; then
+          echo "Hashes are different for orchestrator"
+          echo "BUILD_ORCHESTRATOR=true" >> $GITHUB_ENV
+        else
+          echo "BUILD_ORCHESTRATOR=false" >> $GITHUB_ENV
+        fi
 
     - name: Get short SHA
       id: vars
       run: echo "SHORT_SHA=${GITHUB_SHA::7}" >> $GITHUB_ENV
 
     - name: Build and push Docker image for orchestrator
-      if: env.HASH_ORCHESTRATOR != env.PREV_HASH_ORCHESTRATOR
+      if: env.BUILD_ORCHESTRATOR == 'true'
       uses: docker/build-push-action@v5
       with:
         context: ./orchestrator
