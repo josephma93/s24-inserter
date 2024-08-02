@@ -32,7 +32,7 @@ redisClient.on('connect', () => {
 
 const feedbackQueue = 'puppeteer_feedback';
 
-const docker = new Docker({ socketPath: '/var/run/docker.sock' });
+const docker = new Docker({socketPath: '/var/run/docker.sock'});
 
 docker.ping()
     .then(() => {
@@ -78,22 +78,17 @@ redisClient.on('message', async (channel, message) => {
     }
 });
 
-/**
- * Validates the received parameters.
- * @param {Object} params - The parameters to validate.
- * @returns {Object} The validation result.
- */
 function validateParams(params) {
     const requiredFields = ['transactionType', 'date'];
     for (const field of requiredFields) {
         if (!params[field]) {
-            return { isValid: false, error: `Error: ${field} is required` };
+            return {isValid: false, error: `Error: ${field} is required`};
         }
     }
 
     const dateRegex = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$/;
     if (!dateRegex.test(params.date)) {
-        return { isValid: false, error: 'Invalid date format. Please use yyyy-mm-dd format.' };
+        return {isValid: false, error: 'Invalid date format. Please use yyyy-mm-dd format.'};
     }
 
     if (['donation', 'deposit'].includes(params.transactionType)) {
@@ -105,16 +100,11 @@ function validateParams(params) {
         }
     }
 
-    return { isValid: true };
+    return {isValid: true};
 }
 
-/**
- * Publishes feedback to the Redis feedback queue.
- * @param {string} status - The status of the feedback.
- * @param {string} message - The feedback message.
- */
 function publishFeedback(status, message) {
-    const feedback = { status, message };
+    const feedback = {status, message};
     redisClient.publish(feedbackQueue, JSON.stringify(feedback), (err) => {
         if (err) {
             console.error('Failed to publish feedback:', err);
@@ -122,14 +112,6 @@ function publishFeedback(status, message) {
     });
 }
 
-/**
- * Runs a Docker command based on the given parameters.
- * @param {Object} params - The parameters for the Docker command.
- * @param {string} params.transactionType - The type of the transaction.
- * @param {string} params.date - The date of the transaction.
- * @param {string} params.worldDonations - The world donations amount.
- * @param {string} params.localDonations - The local donations amount.
- */
 async function runDockerCommand(params) {
     const dockerCmd = [
         'mkdir -p /home/pptruser/workdir',
@@ -139,6 +121,21 @@ async function runDockerCommand(params) {
         `node insert-s-24-record.mjs --action ${params.transactionType} --date ${params.date} --world-work-amount ${params.worldDonations} --congregation-amount ${params.localDonations}`,
     ].join(' && ');
 
+    try {
+        const container = await createDockerContainer(dockerCmd);
+        await startDockerContainer(container);
+        await waitForDockerContainer(container);
+    } catch (err) {
+        if (err.statusCode === 404 && err.json && err.json.message.includes('No such image')) {
+            await handleImageNotFoundError(dockerCmd);
+        } else {
+            console.error('Failed to start Docker container:', err);
+            publishFeedback('error', `Puppeteer script execution failed: ${err.message}`);
+        }
+    }
+}
+
+async function createDockerContainer(dockerCmd) {
     try {
         const container = await docker.createContainer({
             Image: 'ghcr.io/puppeteer/puppeteer:22.10.0',
@@ -152,28 +149,77 @@ async function runDockerCommand(params) {
         });
 
         if (debug) {
-            console.log('Issuing docker container start.');
+            console.log('Docker container created.');
+        }
+
+        return container;
+    } catch (err) {
+        throw err;
+    }
+}
+
+async function startDockerContainer(container) {
+    try {
+        if (debug) {
+            console.log('Starting Docker container.');
         }
 
         await container.start();
-
-        container.wait()
-            .then((data) => {
-                if (debug) {
-                    console.log('Docker container exited with status:', data.StatusCode);
-                }
-                if (data.StatusCode !== 0) {
-                    publishFeedback('error', `Puppeteer script execution failed with exit code ${data.StatusCode}`);
-                } else {
-                    publishFeedback('info', 'Puppeteer script executed successfully.');
-                }
-            })
-            .catch((err) => {
-                console.error('Docker container error:', err);
-                publishFeedback('error', `Puppeteer script execution failed: ${err.message}`);
-            });
     } catch (err) {
-        console.error('Failed to start Docker container:', err);
-        publishFeedback('error', `Puppeteer script execution failed: ${err.message}`);
+        throw err;
+    }
+}
+
+async function waitForDockerContainer(container) {
+    try {
+        const data = await container.wait();
+
+        if (debug) {
+            console.log('Docker container exited with status:', data.StatusCode);
+        }
+
+        if (data.StatusCode !== 0) {
+            publishFeedback('error', `Puppeteer script execution failed with exit code ${data.StatusCode}`);
+        } else {
+            publishFeedback('info', 'Puppeteer script executed successfully.');
+        }
+    } catch (err) {
+        throw err;
+    }
+}
+
+async function handleImageNotFoundError(dockerCmd) {
+    try {
+        if (debug) {
+            console.log('Image not found locally, pulling image from registry.');
+        }
+
+        const onFinished = async (err, output) => {
+            if (err) {
+                console.error('Error pulling Docker image:', err);
+                publishFeedback('error', `Failed to pull Docker image: ${err.message}`);
+                return;
+            }
+            // Retry creating and starting the container
+            const container = await createDockerContainer(dockerCmd);
+            await startDockerContainer(container);
+            await waitForDockerContainer(container);
+        };
+
+        const onProgress = (event) => {
+            if (debug) {
+                console.log('Docker pull progress:', event);
+            }
+        };
+
+        await docker.pull('ghcr.io/puppeteer/puppeteer:22.10.0', (err, stream) => {
+            if (err) {
+                throw err;
+            }
+            docker.modem.followProgress(stream, onFinished, onProgress);
+        });
+    } catch (pullError) {
+        console.error('Failed to pull Docker image:', pullError);
+        publishFeedback('error', `Failed to pull Docker image: ${pullError.message}`);
     }
 }
