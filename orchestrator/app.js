@@ -4,10 +4,10 @@ const dotenv = require('dotenv');
 
 dotenv.config();
 
-const redisHost = process.env.REDIS_HOST;
-const redisPassword = process.env.REDIS_PASSWORD;
-const scriptDir = process.env.SCRIPT_DIR;
-const debug = process.env.DEBUG === 'true';
+const redisHost = process.env.S24_ORCHESTRATOR_REDIS_HOST;
+const redisPassword = process.env.S24_ORCHESTRATOR_REDIS_PASSWORD;
+const scriptDir = process.env.S24_ORCHESTRATOR_SCRIPT_DIR;
+const debug = process.env.S24_ORCHESTRATOR_DEBUG === 'true';
 
 if (!redisHost || !redisPassword || !scriptDir) {
     console.error('Missing required environment variables. Please ensure REDIS_HOST, REDIS_PASSWORD, and SCRIPT_DIR are set.');

@@ -2,7 +2,7 @@ const redis = require('redis');
 const debug = require('debug')('s24:redis');
 
 const redisClient = redis.createClient({
-    url: `redis://default:${process.env.REDIS_PASSWORD}@leaflex.site/1`,
+    url: `redis://default:${process.env.S24_FE_REDIS_PASSWORD}@leaflex.site/1`,
     socket: {
         reconnectStrategy: 3,
     }
