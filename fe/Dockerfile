@@ -16,9 +16,6 @@ RUN apk add --no-cache tini
 RUN mkdir -p /usr/app && chown node:node /usr/app
 WORKDIR /usr/app
 
-# Install dependencies as node user
-USER node
-
 # Copy package.json and package-lock.json
 COPY --chown=node:node package*.json ./
 
@@ -33,6 +30,9 @@ EXPOSE $PORT
 
 # Set the stop signal for the container
 STOPSIGNAL SIGTERM
+
+# Switch to node user
+USER node
 
 # Use tini to handle init system
 ENTRYPOINT ["tini", "--"]
