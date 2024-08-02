@@ -1,33 +1,41 @@
-# Utiliza una versión específica de node:20.0-alpine para evitar problemas de compatibilidad
-FROM node:20.0-alpine
+FROM node:20-alpine
 
-# Define variables de entorno
-ENV PORT=3000 \
-    NODE_ENV=production \
-    REDIS_PASSWORD=not_set \
-    DEBUG=*
+# Define environment variables
+ENV DEBUG=*
+ENV NODE_ENV=production
+ENV NPM_CONFIG_LOGLEVEL=debug
+ENV NPM_CONFIG_PREFIX=/home/node/.npm-global
+ENV PATH=$PATH:/home/node/.npm-global/bin
+ENV PORT=3000
+ENV REDIS_PASSWORD=not_set
 
-# Crea el directorio de la aplicación y asigna los permisos adecuados
+# Install tini
+RUN apk add --no-cache tini
+
+# Create app directory and set ownership
 RUN mkdir -p /usr/app && chown node:node /usr/app
 WORKDIR /usr/app
 
-# Copia los archivos package.json y package-lock.json
-COPY --chown=node:node package*.json ./
-
-# Instala las dependencias en modo de producción
-RUN npm ci --only=production
-
-# Copia el resto del código de la aplicación
-COPY --chown=node:node . .
-
-# Expone el puerto de la aplicación
-EXPOSE $PORT
-
-# Cambia al usuario node
+# Install dependencies as node user
 USER node
 
-# Define la señal de parada para el contenedor
+# Copy package.json and package-lock.json
+COPY --chown=node:node package*.json ./
+
+# Install production dependencies
+RUN npm ci --only=production
+
+# Copy the rest of the application code
+COPY --chown=node:node . .
+
+# Expose the application port
+EXPOSE $PORT
+
+# Set the stop signal for the container
 STOPSIGNAL SIGTERM
 
-# Define el comando por defecto para ejecutar la aplicación
+# Use tini to handle init system
+ENTRYPOINT ["tini", "--"]
+
+# Start the application
 CMD ["npm", "start"]

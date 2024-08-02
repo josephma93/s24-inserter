@@ -3,21 +3,30 @@ FROM node:20-alpine
 ENV NODE_ENV=production
 ENV NPM_CONFIG_PREFIX=/home/node/.npm-global
 ENV PATH=$PATH:/home/node/.npm-global/bin
-ENV NPM_CONFIG_LOGLEVEL debug
+ENV NPM_CONFIG_LOGLEVEL=debug
 
-WORKDIR /usr/src/app
-
+# Install tini
 RUN apk add --no-cache tini
 
-COPY package*.json ./
+# Create app directory and set ownership
+RUN mkdir -p /usr/app && chown node:node /usr/app
+WORKDIR /usr/app
 
-RUN npm install --production
+# Install dependencies as node user
+USER node
 
-COPY . .
+COPY --chown=node:node package*.json ./
 
-RUN addgroup -S nodegroup && adduser -S nodeuser -G nodegroup \
-  && chown -R nodeuser:nodegroup /usr/src/app
+RUN npm ci --only=production
 
-USER nodeuser
+# Copy the rest of the application code as node user
+COPY --chown=node:node . .
 
-CMD ["tini", "--", "node", "app.js"]
+# Set the signal for the Docker to send to the container to terminate it
+STOPSIGNAL SIGTERM
+
+# Use tini to handle init system
+ENTRYPOINT ["tini", "--"]
+
+# Start the application
+CMD ["node", "app.js"]
