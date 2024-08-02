@@ -14,11 +14,13 @@ if (!redisHost || !redisPassword || !scriptDir) {
     process.exit(1);
 }
 
+// Conexión para suscripción
 const redisSubscriber = new Redis({
     host: redisHost,
     password: redisPassword,
 });
 
+// Conexión para publicación
 const redisPublisher = new Redis({
     host: redisHost,
     password: redisPassword,
@@ -129,10 +131,11 @@ async function runDockerCommand(params) {
     try {
         const container = await createDockerContainer(dockerCmd);
         await startDockerContainer(container);
+        await logDockerContainer(container);  // Capturar y mostrar logs
         await waitForDockerContainer(container);
     } catch (err) {
         if (err.statusCode === 404 && err.json && err.json.message.includes('No such image')) {
-            await handleImageNotFoundError(dockerCmd);
+            await handleImageNotFoundError(params);
         } else {
             console.error('Failed to start Docker container:', err);
             publishFeedback('error', `Puppeteer script execution failed: ${err.message}`);
@@ -175,6 +178,22 @@ async function startDockerContainer(container) {
     }
 }
 
+async function logDockerContainer(container) {
+    try {
+        const stream = await container.logs({
+            follow: true,
+            stdout: true,
+            stderr: true,
+        });
+
+        stream.on('data', (data) => {
+            console.log('Docker logs:', data.toString());
+        });
+    } catch (err) {
+        console.error('Error capturing Docker logs:', err);
+    }
+}
+
 async function waitForDockerContainer(container) {
     try {
         const data = await container.wait();
@@ -193,7 +212,7 @@ async function waitForDockerContainer(container) {
     }
 }
 
-async function handleImageNotFoundError(dockerCmd) {
+async function handleImageNotFoundError(params) {
     try {
         if (debug) {
             console.log('Image not found locally, pulling image from registry.');
@@ -206,9 +225,7 @@ async function handleImageNotFoundError(dockerCmd) {
                 return;
             }
             // Retry creating and starting the container
-            const container = await createDockerContainer(dockerCmd);
-            await startDockerContainer(container);
-            await waitForDockerContainer(container);
+            await runDockerCommand(params);
         };
 
         const onProgress = (event) => {
