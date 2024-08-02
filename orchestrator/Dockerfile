@@ -5,14 +5,11 @@ ENV NODE_ENV=production
 # Install tini
 RUN apk add --no-cache tini
 
-# Create app directory and set ownership
-RUN mkdir -p /usr/app && chown node:node /usr/app
+# Create app directory
+RUN mkdir -p /usr/app
 WORKDIR /usr/app
 
-# Install dependencies as node user
-USER node
-
-COPY --chown=node:node package*.json ./
+COPY package*.json ./
 
 RUN npm ci --only=production
 
