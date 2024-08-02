@@ -14,19 +14,24 @@ if (!redisHost || !redisPassword || !scriptDir) {
     process.exit(1);
 }
 
-const redisClient = new Redis({
+const redisSubscriber = new Redis({
     host: redisHost,
     password: redisPassword,
 });
 
-redisClient.on('error', (err) => {
-    console.error('Redis client error:', err);
+const redisPublisher = new Redis({
+    host: redisHost,
+    password: redisPassword,
+});
+
+redisSubscriber.on('error', (err) => {
+    console.error('Redis subscriber error:', err);
     process.exit(1);
 });
 
-redisClient.on('connect', () => {
+redisSubscriber.on('connect', () => {
     if (debug) {
-        console.log('Connected to Redis');
+        console.log('Connected to Redis subscriber');
     }
 });
 
@@ -45,7 +50,7 @@ docker.ping()
         process.exit(1);
     });
 
-redisClient.subscribe('puppeteer_queue', (err) => {
+redisSubscriber.subscribe('puppeteer_queue', (err) => {
     if (err) {
         console.error('Failed to subscribe to puppeteer_queue:', err);
         process.exit(1);
@@ -54,7 +59,7 @@ redisClient.subscribe('puppeteer_queue', (err) => {
     }
 });
 
-redisClient.on('message', async (channel, message) => {
+redisSubscriber.on('message', async (channel, message) => {
     if (channel === 'puppeteer_queue') {
         if (debug) {
             console.log('Received raw message:', message);
@@ -105,7 +110,7 @@ function validateParams(params) {
 
 function publishFeedback(status, message) {
     const feedback = {status, message};
-    redisClient.publish(feedbackQueue, JSON.stringify(feedback), (err) => {
+    redisPublisher.publish(feedbackQueue, JSON.stringify(feedback), (err) => {
         if (err) {
             console.error('Failed to publish feedback:', err);
         }
