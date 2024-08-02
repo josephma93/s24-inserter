@@ -177,3 +177,5 @@ async function runDockerCommand(params) {
         publishFeedback('error', `Puppeteer script execution failed: ${err.message}`);
     }
 }
+
+
