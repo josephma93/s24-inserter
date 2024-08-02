@@ -16,17 +16,14 @@ RUN apk add --no-cache tini
 RUN mkdir -p /usr/app && chown node:node /usr/app
 WORKDIR /usr/app
 
-# Switch to node user
+# Install dependencies as node user
 USER node
 
 # Copy package.json and package-lock.json
 COPY --chown=node:node package*.json ./
 
-# Check if package.json and package-lock.json are copied correctly
-RUN ls -la
-
 # Install production dependencies
-RUN npm ci --only=production
+RUN npm ci --only=production || { cat npm-debug.log; exit 1; }
 
 # Copy the rest of the application code
 COPY --chown=node:node . .
